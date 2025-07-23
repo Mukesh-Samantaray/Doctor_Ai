@@ -1,48 +1,45 @@
-# File: app.py
-
-import gradio as gr
-from Brain import get_brain_response
-from Patient import record_voice_to_text
-from Doctor import text_to_speech, stop_speech
+# Streamlit_App.py
+import streamlit as st
+from patient import record_voice_to_text
+from doctor import text_to_speech, stop_speech
+from brain import get_brain_response
 from PIL import Image
-import os
 
-# Global variable to hold image
-image_path = "download.jpeg"
+st.set_page_config(page_title="🧠 Doctor Ai", layout="centered")
+st.title("🧠 Doctor Ai")
 
-def handle_text_input(text):
-    response = get_brain_response(text)
-    text_to_speech(response)
-    return response, image_path
+st.sidebar.header("User Options")
+input_mode = st.sidebar.radio("Choose Input Type", ["Text", "Voice"])
 
-def handle_voice_input():
-    question = record_voice_to_text()
-    response = get_brain_response(question)
-    text_to_speech(response)
-    return response, image_path
+uploaded_image = st.file_uploader("📤 Upload Medical Image (JPEG/PNG)", type=["jpg", "jpeg", "png"])
 
-def stop_audio():
-    stop_speech()
-    return "Speech Stopped."
+if uploaded_image:
+    image = Image.open(uploaded_image)
+    st.image(image, caption="Uploaded Image", width=300)
+    with open("download.jpeg", "wb") as f:
+        f.write(uploaded_image.read())
 
-with gr.Blocks() as demo:
-    gr.Markdown("# 🩺 Doctor AI - Image-Based Voice Consultation")
+    st.success("✅ Image uploaded and saved successfully.")
 
-    with gr.Row():
-        with gr.Column():
-            img_display = gr.Image(label="Uploaded Image", value=image_path, interactive=False, width=300)
-            input_method = gr.Radio(["Text", "Voice"], label="Choose Input Method", value="Text")
-            text_box = gr.Textbox(label="Enter Your Question")
-            ask_button = gr.Button("Ask Doctor")
-            voice_button = gr.Button("Record Voice")
-            stop_button = gr.Button("Stop Speech")
+    if input_mode == "Text":
+        user_question = st.text_input("💬 Ask your question about the image")
+        if st.button("Submit Question") and user_question:
+            with st.spinner("Generating response..."):
+                ai_response = get_brain_response(user_question)
+            st.markdown(f"**🩺 Doctor's Text Response:** {ai_response}")
+            text_to_speech(ai_response)
+            if st.button("🔇 Stop Audio"):
+                stop_speech()
 
-        with gr.Column():
-            response_output = gr.Textbox(label="Doctor's Response")
-            image_preview = gr.Image(label="Diagnostic Image", value=image_path, interactive=False, width=300)
-
-    ask_button.click(fn=handle_text_input, inputs=text_box, outputs=[response_output, image_preview])
-    voice_button.click(fn=handle_voice_input, outputs=[response_output, image_preview])
-    stop_button.click(fn=stop_audio, outputs=response_output)
-
-demo.launch()
+    elif input_mode == "Voice":
+        record_button = st.button("🎙️ Record Voice")
+        if record_button:
+            with st.spinner("Listening..."):
+                user_question = record_voice_to_text()
+            st.markdown(f"**🗣️ You said:** {user_question}")
+            with st.spinner("Generating response..."):
+                ai_response = get_brain_response(user_question)
+            st.markdown(f"**🩺 Doctor's Text Response:** {ai_response}")
+            text_to_speech(ai_response)
+            if st.button("🔇 Stop Audio"):
+                stop_speech()
