@@ -2,8 +2,8 @@
 import streamlit as st
 from patient import record_voice_to_text
 from doctor import text_to_speech, stop_speech
-from bBrain import get_brain_response
-from PIL import Image
+from Brain import get_brain_response
+# from PIL import Image
 
 st.set_page_config(page_title="🧠 Doctor Ai", layout="centered")
 st.title("🧠 Doctor Ai")
