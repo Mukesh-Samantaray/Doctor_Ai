@@ -1,45 +1,47 @@
-# Streamlit_App.py
 import streamlit as st
-from patient import record_voice_to_text
-from doctor import text_to_speech, stop_speech
 from Brain import get_brain_response
-from PIL import Image
+from doctor import text_to_speech_bytes
 
-st.set_page_config(page_title="🧠 Doctor Ai", layout="centered")
-st.title("🧠 Doctor Ai")
+st.set_page_config(page_title="🩺 Doctor AI", layout="centered")
+st.markdown("<h1 style='text-align: center;'>🩺 Doctor AI</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center;'>Ask questions about your uploaded medical image</p>", unsafe_allow_html=True)
 
-st.sidebar.header("User Options")
-input_mode = st.sidebar.radio("Choose Input Type", ["Text", "Voice"])
+# Use columns for cleaner layout
+col1, col2 = st.columns([1, 2])
 
-uploaded_image = st.file_uploader("📤 Upload Medical Image (JPEG/PNG)", type=["jpg", "jpeg", "png"])
+with col1:
+    image = st.file_uploader("📷 Upload an image", type=["jpg", "jpeg", "png"])
 
-if uploaded_image:
-    image = Image.open(uploaded_image)
-    st.image(image, caption="Uploaded Image", width=300)
-    with open("download.jpeg", "wb") as f:
-        f.write(uploaded_image.read())
+with col2:
+    question = st.text_input("💬 Your question:")
 
-    st.success("✅ Image uploaded and saved successfully.")
+# Stylish submit button
+submit = st.button("🚀 Submit", use_container_width=True)
 
-    if input_mode == "Text":
-        user_question = st.text_input("💬 Ask your question about the image")
-        if st.button("Submit Question") and user_question:
-            with st.spinner("Generating response..."):
-                ai_response = get_brain_response(user_question)
-            st.markdown(f"**🩺 Doctor's Text Response:** {ai_response}")
-            text_to_speech(ai_response)
-            if st.button("🔇 Stop Audio"):
-                stop_speech()
+if submit:
+    if image and question:
+        image_bytes = image.read()
 
-    elif input_mode == "Voice":
-        record_button = st.button("🎙️ Record Voice")
-        if record_button:
-            with st.spinner("Listening..."):
-                user_question = record_voice_to_text()
-            st.markdown(f"**🗣️ You said:** {user_question}")
-            with st.spinner("Generating response..."):
-                ai_response = get_brain_response(user_question)
-            st.markdown(f"**🩺 Doctor's Text Response:** {ai_response}")
-            text_to_speech(ai_response)
-            if st.button("🔇 Stop Audio"):
-                stop_speech()
+        # Generate response
+        with st.spinner("🧠 Thinking..."):
+            ai_response = get_brain_response(question, image_bytes)
+            audio_buffer = text_to_speech_bytes(ai_response)
+
+        # Play audio immediately near top
+        if audio_buffer:
+            st.markdown("### 🔊 Doctor's Voice Response:")
+            st.audio(audio_buffer, format="audio/mp3")
+        else:
+            st.error("❌ Failed to generate voice response.")
+
+        # Show response and image side by side
+        st.markdown("---")
+        col_text, col_img = st.columns([2, 1])
+        with col_text:
+            st.markdown("### 📜 Doctor's Text Response:")
+            st.write(ai_response)
+
+        with col_img:
+            st.image(image_bytes, caption="📸 Uploaded Image", width=250)
+    else:
+        st.warning("📍 Please upload an image and enter a question before submitting.")

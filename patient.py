@@ -1,6 +1,5 @@
 import speech_recognition as sr
 import datetime
-import os
 
 def record_voice_to_text(save_audio=True):
     recognizer = sr.Recognizer()
@@ -11,7 +10,6 @@ def record_voice_to_text(save_audio=True):
         print("🔇 Recording stopped.")
 
     try:
-        # Save audio as a .wav file
         if save_audio:
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"patient_voice_{timestamp}.wav"
@@ -19,7 +17,6 @@ def record_voice_to_text(save_audio=True):
                 f.write(audio.get_wav_data())
             print(f"💾 Audio saved as: {filename}")
 
-        # Convert audio to text
         text = recognizer.recognize_google(audio)
         print("🗣️ Recognized Speech:", text)
         return text
